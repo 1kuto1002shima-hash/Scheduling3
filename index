@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10分刻み計画メーカー</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem; background: #f5f5f5; }
+    h1 { font-size: 1.4rem; }
+    .card { background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+    label { display: block; margin-top: .5rem; }
+    input, select, button, textarea { width: 100%; padding: .5rem; margin-top: .25rem; }
+    button { margin-top: 1rem; font-size: 1rem; }
+    .schedule { font-size: .85rem; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <h1>10分刻み 計画自動生成</h1>
+
+  <div class="card">
+    <h2>① 固定時間行動</h2>
+    <label>行動名</label>
+    <input id="fixedName" placeholder="睡眠" />
+    <label>開始時刻 (分)</label>
+    <input id="fixedStart" type="number" placeholder="0" />
+    <label>終了時刻 (分)</label>
+    <input id="fixedEnd" type="number" placeholder="360" />
+    <button onclick="addFixed()">追加</button>
+  </div>
+
+  <div class="card">
+    <h2>② カテゴリ配分</h2>
+    <label>カテゴリ名</label>
+    <input id="catName" placeholder="勉強" />
+    <label>割合 (0〜1)</label>
+    <input id="catRatio" type="number" step="0.1" placeholder="0.5" />
+    <button onclick="addCategory()">追加</button>
+  </div>
+
+  <div class="card">
+    <h2>③ 計画生成</h2>
+    <button onclick="generate()">生成する</button>
+  </div>
+
+  <div class="card schedule" id="output"></div>
+
+<script>
+let fixed = [];
+let categories = [];
+
+function addFixed() {
+  fixed.push({
+    name: fixedName.value,
+    start: parseInt(fixedStart.value),
+    end: parseInt(fixedEnd.value)
+  });
+  alert('固定行動を追加しました');
+}
+
+function addCategory() {
+  categories.push({
+    name: catName.value,
+    ratio: parseFloat(catRatio.value)
+  });
+  alert('カテゴリを追加しました');
+}
+
+function generate() {
+  let timeline = Array(144).fill(''); // 144 × 10分 = 24h
+
+  // 固定行動配置
+  fixed.forEach(f => {
+    for (let t = f.start/10; t < f.end/10; t++) {
+      timeline[t] = f.name;
+    }
+  });
+
+  let freeSlots = timeline.map((v,i)=>v===''?i:null).filter(v=>v!==null);
+  let totalFree = freeSlots.length;
+
+  categories.forEach(cat => {
+    let slots = Math.floor(totalFree * cat.ratio);
+    for (let i=0; i<slots && freeSlots.length>0; i++) {
+      let idx = freeSlots.shift();
+      timeline[idx] = cat.name;
+    }
+  });
+
+  let out = '';
+  timeline.forEach((v,i)=>{
+    let h = Math.floor(i*10/60);
+    let m = (i*10)%60;
+    out += `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}  ${v||'未割当'}<br>`;
+  });
+
+  output.innerHTML = out;
+}
+</script>
+</body>
+</html>
